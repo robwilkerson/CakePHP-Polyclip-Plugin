@@ -56,7 +56,7 @@ class AttachableBehavior extends ModelBehavior {
 					$model->Attachment->attach( $model->alias, $entity_id, $alias, $model->data[$alias]['upload'] );
 				}
 				catch( Exception $e ) {
-					# TODO: Do something more graceful that exit()?
+					# TODO: Do something more graceful than exit()?
 					exit( $e->getMessage() );
 				}
 			}

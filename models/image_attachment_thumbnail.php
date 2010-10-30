@@ -49,7 +49,8 @@ class ImageAttachmentThumbnail extends AppModel {
 				
 				case 'resize_to_fill':
 					# RESIZE TO FILL
-					# Resize to whichever dimension needs to shrink less and crop the other
+					# Resize to whichever dimension needs to shrink less and crop
+					# the other, clipping half from each side.
 					$this->log( 'Resizing to fill', LOG_DEBUG );
 					
 					$scale    = max( $max_w/$src_w, $max_h/$src_h );
