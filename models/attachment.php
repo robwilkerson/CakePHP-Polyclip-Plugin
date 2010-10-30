@@ -10,8 +10,11 @@ class Attachment extends AppModel {
 		)
 	);
 	
+	public $hasMany = array(
+		'AttachmentThumbnail' => array( 'className' => 'Polyclip.AttachmentThumbnail', 'foreignKey' => 'polyclip_attachment_id', 'dependent' => true )
+	);
 	public $hasOne = array(
-		'ImageAttachment' => array( 'className' => 'Polyclip.ImageAttachment', 'foreignKey' => 'polyclip_attachment_id', 'dependent' => true )
+		'AttachmentImage' => array( 'className' => 'Polyclip.AttachmentImage', 'foreignKey' => 'entity_id', 'dependent' => true )
 	);
 
 	public $validate  = array();
@@ -58,6 +61,10 @@ class Attachment extends AppModel {
 		else {
 			throw new Exception( $this->upload_error( $new['error'] ) );
 		}
+	}
+	
+	public function has_thumbnails() {
+		# TODO: How do we determine whether thumbnails exist?
 	}
 
 	/**

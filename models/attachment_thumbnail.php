@@ -1,12 +1,8 @@
 <?php
 
-class ImageAttachmentThumbnail extends AppModel {
-	public $name      = 'ImageAttachmentThumbnail';
-	public $useTable  = 'polyclip_images'; # yes, the same table is used for ImageAttachment
-	
-	public $belongsTo = array(
-		'Image' => array( 'className' => 'Polyclip.ImageAttachment', 'foreignKey' => 'parent_id' )
-	);
+class AttachmentThumbnail extends AppModel {
+	public $name      = 'AttachmentThumbnail';
+	public $useTable  = 'polyclip_thumbnails'; # yes, the same table is used for ImageAttachment
 	
 	/**
 	 * PUBLIC METHODS
@@ -15,8 +11,9 @@ class ImageAttachmentThumbnail extends AppModel {
 	public function generate( $method, $attachment, $thumb_alias, $max_w, $max_h, $quality = 75 ) {
 		$this->log( 'Creating a thumbnail not to exceed ' . $max_w . 'x' . $max_h . ' (' . $thumb_alias . ') for ' . json_encode( $attachment ), LOG_DEBUG );
 		
-		$method = strtolower( $method ) == 'resize_to_fill' ? 'resize_to_fill' : 'resize_to_fit';	# TODO: support other methods?
-		$source = APP . 'plugins/polyclip/webroot' . $attachment['Attachment']['path'];
+		$base_path = APP . 'plugins/polyclip/webroot';
+		$method    = strtolower( $method ) == 'resize_to_fill' ? 'resize_to_fill' : 'resize_to_fit';	# TODO: support other methods?
+		$source    = $base_path . $attachment['Attachment']['path'];
 		
 		# File details
 		$info = pathinfo( $source );
@@ -125,6 +122,7 @@ class ImageAttachmentThumbnail extends AppModel {
 		
 		imagedestroy( $thumb );
 		imagedestroy( $copy );
-		return true;
+		
+		return array( 'path' => str_replace( $base_path, '', $save_as ), 'width' => $scaled_w, 'height' => $scaled_h );
 	}
 }

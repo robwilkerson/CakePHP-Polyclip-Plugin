@@ -1,14 +1,13 @@
 <?php
 
-class ImageAttachment extends AppModel {
-	public $name      = 'ImageAttachment';
+class AttachmentImage extends AppModel {
+	public $name      = 'AttachmentImage';
 	public $useTable  = 'polyclip_images'; # non-standard to avoid conflict
-	
-	public $belongsTo = array(
-		'Attachment' => array( 'className' => 'Polyclip.Attachment', 'foreignKey' => 'polyclip_attachment_id' )
-	);
-	public $hasMany = array(
-		'ImageAttachmentThumbnail' => array( 'className' => 'Polyclip.ImageAttachmentThumbnail', 'foreignKey' => 'parent_id' )
+	public $actsAs    = array(
+		'Polyclip.polymorphic' => array(
+			'classField' => 'model',
+			'foreignKey' => 'entity_id'
+		)
 	);
 	
 	/**
@@ -24,19 +23,6 @@ class ImageAttachment extends AppModel {
 			new PHPDump( $this->Attachment->belongsTo );
 			exit( '[ImageAttachment::afterSave] Houston, we\'re about to have a big problem. This attachment belongs to more than one model' );
 		}
-		/** 
-		new PHPDump( $attached_to, 'ATTACHED TO' );
-		new PHPDump( $this->Attachment, 'ATTACHMENT' );
-		
-		new PHPDump( $this->Attachment->data['Attachment']['alias'], 'ALIAS' );
-		
-		exit( 'EXIT' );
-		*/
-		/**
-		new PHPDump( $attached_to, 'ATTACHED TO' );
-		new PHPDump( $this->Attachment, 'ATTACHMENT' );
-		exit( 'EXIT' );
-		*/
 
 		$thumbnails = isset( $this->Attachment->{$attached_to}->actsAs['Polyclip.attachable'][$this->Attachment->data['Attachment']['alias']]['Thumbnails'] )
 			? $this->Attachment->{$attached_to}->actsAs['Polyclip.attachable'][$this->Attachment->data['Attachment']['alias']]['Thumbnails']
@@ -44,7 +30,7 @@ class ImageAttachment extends AppModel {
 		
 		foreach( $thumbnails as $thumbnail_alias => $details ) {
 			# thumbnails should be aliased as small, medium, large, square, etc.
-			$this->ImageAttachmentThumbnail->generate( $details['method'], $attachment, $thumbnail_alias, $details['width'], $details['height'], 85 );
+			$thumb = $this->ImageAttachmentThumbnail->generate( $details['method'], $attachment, $thumbnail_alias, $details['width'], $details['height'], 85 );
 		}
 	}
 }
