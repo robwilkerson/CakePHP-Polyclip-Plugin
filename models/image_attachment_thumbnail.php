@@ -57,10 +57,12 @@ class ImageAttachmentThumbnail extends AppModel {
 					$scaled_h = $src_h * $scale;
 					
 					if( $scaled_w > $max_w ) {
-						$start_x = ( $scaled_w - $max_w ) / 2;
+						$start_x  = ( $scaled_w - $max_w ) / 2;
+						$scaled_w = $max_w;
 					}
 					if( $scaled_h > $max_h ) {
-						$start_y = ( $scaled_h - $max_h ) / 2;
+						$start_y  = ( $scaled_h - $max_h ) / 2;
+						$scaled_h = $max_h;
 					}
 					break;
 			}
