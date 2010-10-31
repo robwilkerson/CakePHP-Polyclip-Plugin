@@ -27,12 +27,14 @@ class Attachment extends AppModel {
 	 * Creates or replaces a physical file, attaching it to another model
 	 * in the process.
 	 *
-	 * @param		$model	string		The name of the model to which the file
-	 *  													will be attached.
-	 * @param		$id			uuid			ID of the model instance
-	 * @param		$new		array			The newly uploaded attachment
-	 * @param		$old		array			The attachment to be replaced
-	 * @return 	uuid		The new file's identifier
+	 * @param		$model			string		The name of the model to which the file
+	 *  															will be attached.
+	 * @param		$entity_id	uuid			ID of the model instance
+	 * @param		$alias			string		The model alias as specified when
+	 * 																AttachableBehavior is attached
+	 * @param		$new				array			The newly uploaded attachment
+	 * @param		$old				array			The attachment to be replaced
+	 * @return 	uuid				The new file's identifier
 	 */
 	public function attach( $model, $entity_id, $alias, $new, $old = null ) {
 		$this->log( 'Attaching a file to a(n) ' . $model . ' with id ' . $entity_id, LOG_DEBUG );
@@ -42,6 +44,10 @@ class Attachment extends AppModel {
 		}
 		
 		if( $new['error'] === UPLOAD_ERR_OK ) {
+			$this->bindModel(
+				array( 'belongsTo' => array( $model => array( 'className' => $model, 'foreignKey' => 'entity_id', 'conditions' => array( $this->alias . '.model' => $model ) ) ) )
+			);
+			
 			$new['model']     = $model;
 			$new['entity_id'] = $entity_id;
 			$new['alias']     = $alias;
@@ -116,20 +122,32 @@ class Attachment extends AppModel {
 		try {
 			if( move_uploaded_file( $attachment['tmp_name'], $save_as ) ) {
 				$attachment['mimetype'] = $attachment['type'];
-				$attachment['path']     = str_replace ( APP . 'plugins/polyclip/webroot', '', $save_as );
-				$attachment['uri']      = $attachment['path'];
+				$attachment['url']      = str_replace ( APP . 'plugins/polyclip/webroot', '/polyclip', $save_as );
 				
-				$data['Attachment'] = $attachment;
+				$data[$attachment['alias']] = $attachment;
 				
-				if( preg_match( '/^image\//', $data['Attachment']['mimetype'] ) ) {
+				if( preg_match( '/^image\//', $data[$attachment['alias']]['mimetype'] ) ) {
 					$info = getimagesize( $save_as );
 					
-					$data['ImageAttachment']['width']  = $info[0];
-					$data['ImageAttachment']['height'] = $info[1];
+					$data['AttachmentImage']['model']  = $this->alias;
+					$data['AttachmentImage']['width']  = $info[0];
+					$data['AttachmentImage']['height'] = $info[1];
+					
+					# Generate thumbnails, if necessary
+					if( isset( $this->{$attachment['model']}->actsAs['Polyclip.attachable'][$attachment['alias']]['Thumbnails'] ) ) {
+						$thumbnails = $this->{$attachment['model']}->actsAs['Polyclip.attachable'][$attachment['alias']]['Thumbnails'];
+						$data['AttachmentThumbnail'] = array();
+						
+						foreach( $thumbnails as $thumbnail_alias => $details ) {
+							# thumbnails should be aliased as small, medium, large, square, etc.
+							$thumb = $this->AttachmentThumbnail->generate( $details['method'], $data[$attachment['alias']], $thumbnail_alias, $details['width'], $details['height'], 85 );
+							$thumb['alias'] = $thumbnail_alias;
+							
+							array_push( $data['AttachmentThumbnail'], $thumb );
+						}
+					}
 				}
 				
-				$this->saveAll( $data );
-
 				try {
 					$this->mode( $save_as );
 				}
@@ -139,6 +157,8 @@ class Attachment extends AppModel {
 					 * change perms from within the runtime context.
 					 */
 				}
+				
+				$this->saveAll( $data );
 			}
 			else {
 				throw new Exception( 'Unable to save file (' . $save_as . ')' );
@@ -197,9 +217,9 @@ class Attachment extends AppModel {
 	 * @param	$file		The absolute file path.
 	 * @return	void
 	 */
-	private function mode( $file ) {
+	private function mode( $file, $octal = 0644 ) {
 		try {
-			chmod( $file, 0644 );
+			chmod( $file, $octal );
 		}
 		catch( Exception $e ) {
 			throw new Exception( 'Unable to set permissions on ' . basename( $file ) . '. ' . $e->getMessage() );

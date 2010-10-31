@@ -49,11 +49,10 @@ class AttachableBehavior extends ModelBehavior {
 			
 		foreach( $this->attachables as $alias => $attachable ) {
 			if( isset( $model->data[$alias] ) ) {
-				$model->Attachment = ClassRegistry::init( 'Polyclip.Attachment', 'model' );
+				# $model->Attachment = ClassRegistry::init( 'Polyclip.Attachment', 'model' );
 				
 				try {
-					# model, entity_id, alias
-					$model->Attachment->attach( $model->alias, $entity_id, $alias, $model->data[$alias]['upload'] );
+					$model->{$alias}->attach( $model->alias, $entity_id, $alias, $model->data[$alias]['upload'] );
 				}
 				catch( Exception $e ) {
 					# TODO: Do something more graceful than exit()?
@@ -64,8 +63,4 @@ class AttachableBehavior extends ModelBehavior {
 		
 		return true;
 	}
-	
-	/**
-	 * PRIVATE METHODS
-	 */
 }

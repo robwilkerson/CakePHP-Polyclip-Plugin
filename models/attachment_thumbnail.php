@@ -2,7 +2,28 @@
 
 class AttachmentThumbnail extends AppModel {
 	public $name      = 'AttachmentThumbnail';
-	public $useTable  = 'polyclip_thumbnails'; # yes, the same table is used for ImageAttachment
+	public $useTable  = 'polyclip_thumbnails';
+	public $hasOne = array(
+		'AttachmentImage' => array( 'className' => 'Polyclip.AttachmentImage', 'foreignKey' => 'entity_id', 'dependent' => true )
+	);
+	
+	/**
+	 * CALLBACK METHODS
+	 */
+	
+	public function afterSave() {
+		/**
+		 * Save image details for each thumbnail. This will probably happen
+		 * within a loop, so the create() method must be called.
+		 */
+		$data['AttachmentImage']['model']     = $this->alias;
+		$data['AttachmentImage']['entity_id'] = $this->id;
+		$data['AttachmentImage']['width']     = round( $this->data[$this->alias]['width'] );
+		$data['AttachmentImage']['height']    = round( $this->data[$this->alias]['height'] );
+		
+		$this->AttachmentImage->create();
+		$this->AttachmentImage->save( $data );
+	}
 	
 	/**
 	 * PUBLIC METHODS
@@ -12,8 +33,9 @@ class AttachmentThumbnail extends AppModel {
 		$this->log( 'Creating a thumbnail not to exceed ' . $max_w . 'x' . $max_h . ' (' . $thumb_alias . ') for ' . json_encode( $attachment ), LOG_DEBUG );
 		
 		$base_path = APP . 'plugins/polyclip/webroot';
+		$base_url  = '/polyclip';
 		$method    = strtolower( $method ) == 'resize_to_fill' ? 'resize_to_fill' : 'resize_to_fit';	# TODO: support other methods?
-		$source    = $base_path . $attachment['Attachment']['path'];
+		$source    = $base_path . str_replace( $base_url, '', $attachment['url'] );
 		
 		# File details
 		$info = pathinfo( $source );
@@ -81,14 +103,12 @@ class AttachmentThumbnail extends AppModel {
 				break;
 			
 			default :
-				$this->log( '[ImageAttachmentThumbnail::generate] Unexpected extension. Unable to CREATE ' . $thumb_alias . ' thumbnail (' . $method . ') for ' . json_encode( $attachment ), LOG_WARNING );
+				$this->log( '[AttachmentThumbnail::generate] Unexpected extension. Unable to CREATE ' . $thumb_alias . ' thumbnail (' . $method . ') for ' . json_encode( $attachment ), LOG_WARNING );
 				return false;
 				break;
 		}
 		
 		# Create a new, empty image with a few options
-		$this->log( 'Creating a new, ' . $scaled_w . 'x' . $scaled_h . ' thumbnail', LOG_DEBUG );
-		
 		$thumb = imagecreatetruecolor( $scaled_w, $scaled_h );
 		imagealphablending( $thumb, false );
 		imagesavealpha( $thumb, true );
@@ -99,7 +119,6 @@ class AttachmentThumbnail extends AppModel {
 		imagecopyresampled( $thumb, $copy, 0, 0, $start_x, $start_y, $scaled_w, $scaled_h, $src_w, $src_h );
 		
 		# Write to file
-		$this->log( 'Writing ' . $thumb . ' to ' . $save_as, LOG_DEBUG );
 		switch( strtolower( $info['extension'] ) ) {
 			case 'gif':
 				imagegif( $thumb, $save_as, $quality );
@@ -115,7 +134,7 @@ class AttachmentThumbnail extends AppModel {
 				break;
 			
 			default:
-				$this->log( '[ImageAttachmentThumbnail::generate] Unexpected extension. Unable to WRITE ' . $thumb_alias . ' thumbnail (' . $method . ') for ' . json_encode( $attachment ), LOG_WARNING );
+				$this->log( '[AttachmentThumbnail::generate] Unexpected extension. Unable to WRITE ' . $thumb_alias . ' thumbnail (' . $method . ') for ' . json_encode( $attachment ), LOG_WARNING );
 				return false;
 				break;
 		}
@@ -123,6 +142,6 @@ class AttachmentThumbnail extends AppModel {
 		imagedestroy( $thumb );
 		imagedestroy( $copy );
 		
-		return array( 'path' => str_replace( $base_path, '', $save_as ), 'width' => $scaled_w, 'height' => $scaled_h );
+		return array( 'path' => str_replace( APP, '/', $save_as ), 'url' => str_replace( $base_path, $base_url, $save_as ), 'width' => $scaled_w, 'height' => $scaled_h, 'size' => filesize( $save_as ) );
 	}
 }
