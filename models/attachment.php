@@ -111,18 +111,22 @@ class Attachment extends AppModel {
 	 * @param	$file		The file array
 	 */
 	private function write( $attachment ) {
+		$base_path = APP . 'plugins/polyclip/webroot';
+		$base_url  = '/polyclip';
+		
 		/**
 		 * Determine where the file should be saved
 		 */
-		$save_as = APP . 'plugins/polyclip/webroot' . $this->asset_path() . '/' . $attachment['name'];
+		$save_as = $base_path . $this->asset_path() . '/' . $attachment['name'];
 		while( file_exists( $save_as ) ) {
-			$save_as = APP . 'plugins/polyclip/webroot' . $this->asset_path() . '/' . $attachment['name'];
+			$save_as = $base_path . $this->asset_path() . '/' . $attachment['name'];
 		}
 
 		try {
 			if( move_uploaded_file( $attachment['tmp_name'], $save_as ) ) {
 				$attachment['mimetype'] = $attachment['type'];
-				$attachment['url']      = str_replace ( APP . 'plugins/polyclip/webroot', '/polyclip', $save_as );
+				$attachment['path']     = str_replace( APP, '/', $save_as );
+				$attachment['url']      = str_replace( $base_path, $base_url, $save_as );
 				
 				$data[$attachment['alias']] = $attachment;
 				

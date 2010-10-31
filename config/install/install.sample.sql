@@ -2,13 +2,12 @@ USE [your_database];
 
 -- The shared physical file properties of a model attachment
 -- Because this is a plugin, the path and URL are different values
--- TOOD: uncomment path and adjust the code
 CREATE TABLE polyclip_attachments(
 	id					CHAR(36)			NOT NULL
 	, model			VARCHAR(255)	NOT NULL
 	, entity_id	CHAR(36) 			NOT NULL
 	, alias     VARCHAR(255)  NOT NULL DEFAULT 'File'
-	-- , path      VARCHAR(255)  NOT NULL
+	, path      VARCHAR(255)  NOT NULL
 	, url       VARCHAR(255)	NOT NULL
 	, mimetype	VARCHAR(255)	NOT NULL DEFAULT 'text/unknown'
 	, size			INT						NOT NULL DEFAULT -1
