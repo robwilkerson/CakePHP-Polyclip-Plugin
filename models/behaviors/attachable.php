@@ -43,20 +43,18 @@ class AttachableBehavior extends ModelBehavior {
 	 */
 	
 	public function afterSave( $model, $created ) {
-		$entity_id = $created
+    $entity_id = $created
 			? $model->getLastInsertId()
-			: $model->data[$model->alias][$model->primaryKey];
+			: $model->id;
 			
 		foreach( $this->attachables as $alias => $attachable ) {
 			if( isset( $model->data[$alias] ) ) {
-				# $model->Attachment = ClassRegistry::init( 'Polyclip.Attachment', 'model' );
-				
 				try {
 					$model->{$alias}->attach( $model->alias, $entity_id, $alias, $model->data[$alias]['upload'] );
 				}
 				catch( Exception $e ) {
 					# TODO: Do something more graceful than exit()?
-					exit( $e->getMessage() );
+					exit( '{' . $alias . '::attach}' . $e->getMessage() );
 				}
 			}
 		}
