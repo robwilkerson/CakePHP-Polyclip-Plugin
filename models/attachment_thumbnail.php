@@ -20,13 +20,13 @@ class AttachmentThumbnail extends AppModel {
 		 * Save image details for each thumbnail. This will probably happen
 		 * within a loop, so the create() method must be called.
 		 */
-		$data['AttachmentImage']['model']     = $this->alias;
-		$data['AttachmentImage']['entity_id'] = $this->id;
-		$data['AttachmentImage']['width']     = round( $this->data[$this->alias]['width'] );
-		$data['AttachmentImage']['height']    = round( $this->data[$this->alias]['height'] );
+		$data['ImageAttachment']['model']     = $this->alias;
+		$data['ImageAttachment']['entity_id'] = $this->id;
+		$data['ImageAttachment']['width']     = round( $this->data[$this->alias]['width'] );
+		$data['ImageAttachment']['height']    = round( $this->data[$this->alias]['height'] );
 		
-		$this->AttachmentImage->create();
-		$this->AttachmentImage->save( $data );
+		$this->ImageAttachment->create();
+		$this->ImageAttachment->save( $data );
 	}
 	
 	/**

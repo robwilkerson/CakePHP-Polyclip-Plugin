@@ -133,9 +133,9 @@ class Attachment extends AppModel {
 				if( preg_match( '/^image\//', $data[$attachment['alias']]['mimetype'] ) ) {
 					$info = getimagesize( $save_as );
 					
-					$data['AttachmentImage']['model']  = $this->alias;
-					$data['AttachmentImage']['width']  = $info[0];
-					$data['AttachmentImage']['height'] = $info[1];
+					$data['ImageAttachment']['model']  = $this->alias;
+					$data['ImageAttachment']['width']  = $info[0];
+					$data['ImageAttachment']['height'] = $info[1];
 					
 					# Generate thumbnails, if necessary
 					if( isset( $this->{$attachment['model']}->actsAs['Polyclip.attachable'][$attachment['alias']]['Thumbnails'] ) ) {
