@@ -141,9 +141,9 @@ class Attachment extends AppModel {
 					if( isset( $this->{$attachment['model']}->actsAs['Polyclip.attachable'][$attachment['alias']]['Thumbnails'] ) ) {
 						$thumbnails = $this->{$attachment['model']}->actsAs['Polyclip.attachable'][$attachment['alias']]['Thumbnails'];
 						$data['AttachmentThumbnail'] = array();
-						
+            
 						foreach( $thumbnails as $thumbnail_alias => $details ) {
-							# thumbnails should be aliased as small, medium, large, square, etc.
+              # thumbnails should be aliased as small, medium, large, square, etc.
 							$thumb = $this->AttachmentThumbnail->generate( $details['method'], $data[$attachment['alias']], $thumbnail_alias, $details['width'], $details['height'], 85 );
 							$thumb['alias'] = $thumbnail_alias;
 							

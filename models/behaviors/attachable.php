@@ -41,6 +41,48 @@ class AttachableBehavior extends ModelBehavior {
 	/**
 	 * CALLBACK METHODS
 	 */
+  
+  public function afterFind( $model, $results, $primary ) {
+    /**
+     * Rebuild the data structure into something a little more intuitive
+     * TODO: Could this be more efficient using Set? Something else?
+     */
+    $modified = array();
+    foreach( $results as $index => $result ) {
+      foreach( array_intersect_assoc( $result, $this->attachables ) as $alias => $attachment ) {
+        $url_info  = pathinfo( $attachment['url'] );
+        $path_info = pathinfo( $attachment['path'] );
+        
+        if( !empty( $attachment['ImageAttachment'] ) ) {
+          $results[$index][$alias]['width'] = $attachment['ImageAttachment']['width'];
+          $results[$index][$alias]['height'] = $attachment['ImageAttachment']['height'];
+        }
+        unset( $results[$index][$alias]['ImageAttachment'] );
+        
+        if( !empty( $attachment['AttachmentThumbnail'] ) ) {
+          foreach( $attachment['AttachmentThumbnail'] as $thumb ) {
+            $size = $thumb['alias'];
+            
+            if( !isset( $results[$index]['Thumbnail'] ) ) {
+              $results[$index]['Thumbnail'] = array();
+            }
+            $results[$index]['Thumbnail'][$size] = array();
+            $results[$index]['Thumbnail'][$size]['width']  = $thumb['ImageAttachment']['width'];
+            $results[$index]['Thumbnail'][$size]['height'] = $thumb['ImageAttachment']['height'];
+            $results[$index]['Thumbnail'][$size]['size']   = $thumb['size'];
+            $results[$index]['Thumbnail'][$size]['url']    =
+              $url_info['dirname'] . '/' . $url_info['filename'] . '.' . $size . '.' . $url_info['extension'];
+            $results[$index]['Thumbnail'][$size]['path']    =
+              $path_info['dirname'] . '/' . $path_info['filename'] . '.' . $size . '.' . $path_info['extension'];
+            
+          }
+        }
+        unset( $results[$index][$alias]['AttachmentThumbnail'] );
+      }
+    }
+    
+    return $results;
+  }
 	
 	public function afterSave( $model, $created ) {
     $entity_id = $created
