@@ -10,12 +10,12 @@ class Attachment extends AppModel {
 		)
 	);
 	
-	public $hasMany = array(
-		'AttachmentThumbnail' => array( 'className' => 'Polyclip.AttachmentThumbnail', 'foreignKey' => 'polyclip_attachment_id', 'dependent' => true )
-	);
 	public $hasOne = array(
-		'AttachmentImage' => array( 'className' => 'Polyclip.AttachmentImage', 'foreignKey' => 'entity_id', 'dependent' => true )
+		'ImageAttachment' => array( 'className' => 'Polyclip.ImageAttachment', 'foreignKey' => 'entity_id', 'dependent' => true )
 	);
+  public $hasMany = array(
+    'AttachmentThumbnail' => array( 'className' => 'Polyclip.AttachmentThumbnail', 'foreignKey' => 'polyclip_attachment_id', 'dependent' => true )
+  );
 
 	public $validate  = array();
 	

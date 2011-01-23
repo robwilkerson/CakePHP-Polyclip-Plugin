@@ -26,7 +26,7 @@ class AttachableBehavior extends ModelBehavior {
 		
 		$this->attachables = isset( $model->actsAs['Polyclip.attachable'] )
 			? $model->actsAs['Polyclip.attachable']
-			: array( 'File' );
+			: array( 'Attachment' );
 		
 		/**
 		 * Bind the current model to the Attachment model for each attachable

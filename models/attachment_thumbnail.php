@@ -2,9 +2,13 @@
 
 class AttachmentThumbnail extends AppModel {
 	public $name      = 'AttachmentThumbnail';
-	public $useTable  = 'polyclip_thumbnails';
-	public $hasOne = array(
-		'AttachmentImage' => array( 'className' => 'Polyclip.AttachmentImage', 'foreignKey' => 'entity_id', 'dependent' => true )
+	public $useTable  = 'polyclip_thumbnails'; # non-standard to avoid conflict
+	
+  public $belongsTo = array(
+		'Image' => array( 'className' => 'Polyclip.Attachment', 'foreignKey' => 'polyclip_attachment_id' )
+	);
+  public $hasOne = array(
+		'ImageAttachment' => array( 'className' => 'Polyclip.ImageAttachment', 'foreignKey' => 'entity_id', 'dependent' => true )
 	);
 	
 	/**
