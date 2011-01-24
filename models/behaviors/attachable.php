@@ -42,42 +42,41 @@ class AttachableBehavior extends ModelBehavior {
 	 * CALLBACK METHODS
 	 */
   
+  public function beforeFind( $model, $query ) {
+    # TODO: Can we do something to get the right stuff in one call
+    #       and avoid the work we're currently doing in afterFind?
+  }
+  
   public function afterFind( $model, $results, $primary ) {
     /**
-     * Rebuild the data structure into something a little more intuitive
-     * TODO: Could this be more efficient using Set? Something else?
+     * Manually attach thumbnail information
+     * TODO: Be a lot better if I could modify the containable bits
+     *       on beforeFind()
      */
-    $modified = array();
-    foreach( $results as $index => $result ) {
+    foreach( $results as $i => $result ) {
       foreach( array_intersect_assoc( $result, $this->attachables ) as $alias => $attachment ) {
         $url_info  = pathinfo( $attachment['url'] );
         $path_info = pathinfo( $attachment['path'] );
         
-        if( !empty( $attachment['ImageAttachment'] ) ) {
-          $results[$index][$alias]['width'] = $attachment['ImageAttachment']['width'];
-          $results[$index][$alias]['height'] = $attachment['ImageAttachment']['height'];
-        }
-        unset( $results[$index][$alias]['ImageAttachment'] );
+        $thumbnails = $model->$alias->AttachmentThumbnail->find( 'all' );
         
-        if( !empty( $attachment['AttachmentThumbnail'] ) ) {
-          foreach( $attachment['AttachmentThumbnail'] as $thumb ) {
-            $size = $thumb['alias'];
-            
-            if( !isset( $results[$index]['Thumbnail'] ) ) {
-              $results[$index]['Thumbnail'] = array();
-            }
-            $results[$index]['Thumbnail'][$size] = array();
-            $results[$index]['Thumbnail'][$size]['width']  = $thumb['ImageAttachment']['width'];
-            $results[$index]['Thumbnail'][$size]['height'] = $thumb['ImageAttachment']['height'];
-            $results[$index]['Thumbnail'][$size]['size']   = $thumb['size'];
-            $results[$index]['Thumbnail'][$size]['url']    =
-              $url_info['dirname'] . '/' . $url_info['filename'] . '.' . $size . '.' . $url_info['extension'];
-            $results[$index]['Thumbnail'][$size]['path']    =
-              $path_info['dirname'] . '/' . $path_info['filename'] . '.' . $size . '.' . $path_info['extension'];
-            
+        if( !empty( $thumbnails ) ) {
+          if( !isset( $results[$i]['Thumbnail'] ) ) {
+            $results[$i]['Thumbnail'] = array();
+          }
+          
+          foreach( $thumbnails as $thumb ) {
+            $thumb_alias = $thumb['AttachmentThumbnail']['alias'];
+            $results[$i]['Thumbnail'][$thumb_alias] = array();
+            $results[$i]['Thumbnail'][$thumb_alias]['size']   = $thumb['AttachmentThumbnail']['size'];
+            $results[$i]['Thumbnail'][$thumb_alias]['width']  = $thumb['ImageAttachment']['width'];
+            $results[$i]['Thumbnail'][$thumb_alias]['height'] = $thumb['ImageAttachment']['height'];
+            $results[$i]['Thumbnail'][$thumb_alias]['url']    =
+              $url_info['dirname'] . '/' . $url_info['filename'] . '.' . $thumb_alias . '.' . $url_info['extension'];
+            $results[$i]['Thumbnail'][$thumb_alias]['path']    =
+              $path_info['dirname'] . '/' . $path_info['filename'] . '.' . $thumb_alias . '.' . $path_info['extension'];
           }
         }
-        unset( $results[$index][$alias]['AttachmentThumbnail'] );
       }
     }
     
