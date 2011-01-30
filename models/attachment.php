@@ -37,13 +37,14 @@ class Attachment extends AppModel {
 	 * @return 	uuid				The new file's identifier
 	 */
 	public function attach( $model, $entity_id, $alias, $new, $old = null ) {
-		$this->log( 'Attaching a file to a(n) ' . $model . ' with id ' . $entity_id, LOG_DEBUG );
+		if( Configure::read( 'debug' ) > 0 ) $this->log( '{Attachment::attach} --> Attaching a file to a(n) ' . $model . ' with id ' . $entity_id, LOG_DEBUG );
 		
 		if( !is_array( $new ) || ( isset( $old ) && !is_array( $old ) ) ) {
 			throw new Exception( 'Polyclip.Attachment::attach() expects at least one binary array argument' );
 		}
 		
 		if( $new['error'] === UPLOAD_ERR_OK ) {
+      # Evidently the association created in AttachableBehavior doesn't persist.
 			$this->bindModel(
 				array( 'belongsTo' => array( $model => array( 'className' => $model, 'foreignKey' => 'entity_id', 'conditions' => array( $this->alias . '.model' => $model ) ) ) )
 			);
@@ -54,10 +55,14 @@ class Attachment extends AppModel {
 			
 			try {
 				if( !isset( $old ) ) { // if no file already exists for this model
-					$this->upload( $new );
+          if( Configure::read( 'debug' ) > 0 ) $this->log( '{Attachment::attach} --> This is a new attachment', LOG_DEBUG );
+					
+          $this->upload( $new );
 				}
 				else { // replace an existing model file
-					$this->replace( $old, $new );
+          if( Configure::read( 'debug' ) > 0 ) $this->log( '{Attachment::attach} --> This is a replacement attachment', LOG_DEBUG );
+          
+					$this->replace( $old, $new, $alias );
 				}
 			}
 			catch( Exception $e ) {
@@ -96,12 +101,22 @@ class Attachment extends AppModel {
 	 * Deletes an existing physical file before uploading and saving a
 	 * new one.
 	 *
-	 * @param 	$old		the old file object
-	 * @param		$new		the new file object
+	 * @param 	$old		the old object
+	 * @param		$new		the new object
+	 * @param   $alias  the attachment alias
 	 * @return	string		id of the new binary object record
 	 */
-	private function replace( $old, $new ) {
-		$this->unlink( FILE_ROOT . $old['path'] );
+	private function replace( $old, $new, $alias ) {
+    $this->delete( $old[$alias]['id'] ); # cascades?
+		$this->unlink( APP . $old[$alias]['path'] );
+    
+    # Delete the associated thumbnails
+    if( !empty( $old['Thumbnail'][$alias] ) ) {
+      foreach( $old['Thumbnail'][$alias] as $size => $thumb ) {
+        $this->unlink( APP . $thumb['path'] );
+      }
+    }
+    
 		return $this->upload( $new );
 	}
 	
@@ -131,6 +146,7 @@ class Attachment extends AppModel {
 				$data[$attachment['alias']] = $attachment;
 				
 				if( preg_match( '/^image\//', $data[$attachment['alias']]['mimetype'] ) ) {
+          if( Configure::read( 'debug' ) > 0 ) $this->log( '{Attachment::write} --> This is an image attachment', LOG_DEBUG );
 					$info = getimagesize( $save_as );
 					
 					$data['ImageAttachment']['model']  = $this->alias;
@@ -180,7 +196,7 @@ class Attachment extends AppModel {
 	 */
 	private function unlink( $path = null ) {
 		if( file_exists( $path ) ) {
-			$this->log( 'Destroying ' . $path, LOG_DEBUG );
+			if( Configure::read( 'debug' ) > 0 ) $this->log( '{Attachment::unlink} --> Destroying ' . $path, LOG_DEBUG );
 			unlink( $path );
 		}
 		else {

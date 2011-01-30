@@ -5,7 +5,7 @@ class AttachmentThumbnail extends AppModel {
 	public $useTable  = 'polyclip_thumbnails'; # non-standard to avoid conflict
 	
   public $belongsTo = array(
-		'Image' => array( 'className' => 'Polyclip.Attachment', 'foreignKey' => 'polyclip_attachment_id' )
+		'Image' => array( 'className' => 'Polyclip.Attachment', 'foreignKey' => 'polyclip_attachment_id', 'dependent' => true )
 	);
   public $hasOne = array(
 		'ImageAttachment' => array( 'className' => 'Polyclip.ImageAttachment', 'foreignKey' => 'entity_id', 'dependent' => true )
@@ -34,7 +34,7 @@ class AttachmentThumbnail extends AppModel {
 	 */
 	
 	public function generate( $method, $attachment, $thumb_alias, $max_w, $max_h, $quality = 75 ) {
-		$this->log( 'Creating a thumbnail not to exceed ' . $max_w . 'x' . $max_h . ' (' . $thumb_alias . ') for ' . json_encode( $attachment ), LOG_DEBUG );
+		if( Configure::read( 'debug' ) > 0 ) $this->log( 'Creating a ' . $thumb_alias . ' thumbnail not to exceed ' . $max_w . 'x' . $max_h . ' for ' . json_encode( $attachment ), LOG_DEBUG );
 		
 		$base_path = APP . 'plugins/polyclip/webroot';
 		$base_url  = '/polyclip';
@@ -54,7 +54,7 @@ class AttachmentThumbnail extends AppModel {
 		}
 		
 		if( $max_w > $src_w && $max_h > $src_h ) { # Height & width are already smaller than the thumbnail
-			$this->log( 'Image is already smaller than this thumbnail\'s max dimensions', LOG_DEBUG );
+			if( Configure::read( 'debug' ) > 0 ) $this->log( 'Image is already smaller than this thumbnail\'s max dimensions', LOG_DEBUG );
 			
 			$scaled_w = $src_w;
 			$scaled_h = $src_h;
@@ -63,7 +63,7 @@ class AttachmentThumbnail extends AppModel {
 			switch( strtolower( $method ) ) {
 				case 'resize_to_fit':	# maintain aspect ratio
 					# RESIZE TO FIT
-					$this->log( 'Resizing to fit', LOG_DEBUG );
+					if( Configure::read( 'debug' ) > 0 ) $this->log( 'Resizing to fit', LOG_DEBUG );
 					
 					$scale    = min( $max_w/$src_w, $max_h/$src_h );
 					$scaled_w = $src_w * $scale;
@@ -74,7 +74,7 @@ class AttachmentThumbnail extends AppModel {
 					# RESIZE TO FILL
 					# Resize to whichever dimension needs to shrink less and crop
 					# the other, clipping half from each side.
-					$this->log( 'Resizing to fill', LOG_DEBUG );
+					if( Configure::read( 'debug' ) > 0 ) $this->log( 'Resizing to fill', LOG_DEBUG );
 					
 					$scale    = max( $max_w/$src_w, $max_h/$src_h );
 					$scaled_w = $src_w * $scale;
@@ -107,7 +107,7 @@ class AttachmentThumbnail extends AppModel {
 				break;
 			
 			default :
-				$this->log( '[AttachmentThumbnail::generate] Unexpected extension. Unable to CREATE ' . $thumb_alias . ' thumbnail (' . $method . ') for ' . json_encode( $attachment ), LOG_WARNING );
+				if( Configure::read( 'debug' ) > 0 ) $this->log( '[AttachmentThumbnail::generate] Unexpected extension. Unable to CREATE ' . $thumb_alias . ' thumbnail (' . $method . ') for ' . json_encode( $attachment ), LOG_WARNING );
 				return false;
 				break;
 		}
@@ -138,7 +138,7 @@ class AttachmentThumbnail extends AppModel {
 				break;
 			
 			default:
-				$this->log( '[AttachmentThumbnail::generate] Unexpected extension. Unable to WRITE ' . $thumb_alias . ' thumbnail (' . $method . ') for ' . json_encode( $attachment ), LOG_WARNING );
+				if( Configure::read( 'debug' ) > 0 ) $this->log( '[AttachmentThumbnail::generate] Unexpected extension. Unable to WRITE ' . $thumb_alias . ' thumbnail (' . $method . ') for ' . json_encode( $attachment ), LOG_WARNING );
 				return false;
 				break;
 		}

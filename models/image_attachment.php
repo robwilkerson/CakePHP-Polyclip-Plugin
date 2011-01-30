@@ -5,7 +5,7 @@ class ImageAttachment extends AppModel {
 	public $useTable  = 'polyclip_images'; # non-standard to avoid conflict
 	
 	public $belongsTo = array(
-		'Attachment'          => array( 'className' => 'Polyclip.Attachment', 'foreignKey' => 'entity_id' ),
-    'AttachmentThumbnail' => array( 'className' => 'Polyclip.AttachmentThumbnail', 'foreignKey' => 'entity_id' )
+		'Attachment'          => array( 'className' => 'Polyclip.Attachment', 'foreignKey' => 'entity_id', 'dependent' => true ),
+    'AttachmentThumbnail' => array( 'className' => 'Polyclip.AttachmentThumbnail', 'foreignKey' => 'entity_id', 'dependent' => true )
 	);
 }
