@@ -1,3 +1,4 @@
 assets/
+install.sql
 install.*.sql
 !install.sample.sql
