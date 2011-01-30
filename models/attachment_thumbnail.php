@@ -34,7 +34,7 @@ class AttachmentThumbnail extends AppModel {
 	 */
 	
 	public function generate( $method, $attachment, $thumb_alias, $max_w, $max_h, $quality = 75 ) {
-		if( Configure::read( 'debug' ) > 0 ) $this->log( 'Creating a ' . $thumb_alias . ' thumbnail not to exceed ' . $max_w . 'x' . $max_h . ' for ' . json_encode( $attachment ), LOG_DEBUG );
+		if( Configure::read( 'debug' ) > 0 ) $this->log( '{AttachmentThumbnail::generate} Creating a ' . $thumb_alias . ' thumbnail not to exceed ' . $max_w . 'x' . $max_h . ' for ' . json_encode( $attachment ), LOG_DEBUG );
 		
 		$base_path = APP . 'plugins/polyclip/webroot';
 		$base_url  = '/polyclip';
@@ -63,7 +63,7 @@ class AttachmentThumbnail extends AppModel {
 			switch( strtolower( $method ) ) {
 				case 'resize_to_fit':	# maintain aspect ratio
 					# RESIZE TO FIT
-					if( Configure::read( 'debug' ) > 0 ) $this->log( 'Resizing to fit', LOG_DEBUG );
+					if( Configure::read( 'debug' ) > 0 ) $this->log( '{AttachmentThumbnail::generate} Resizing to fit', LOG_DEBUG );
 					
 					$scale    = min( $max_w/$src_w, $max_h/$src_h );
 					$scaled_w = $src_w * $scale;
@@ -74,21 +74,30 @@ class AttachmentThumbnail extends AppModel {
 					# RESIZE TO FILL
 					# Resize to whichever dimension needs to shrink less and crop
 					# the other, clipping half from each side.
-					if( Configure::read( 'debug' ) > 0 ) $this->log( 'Resizing to fill', LOG_DEBUG );
+					if( Configure::read( 'debug' ) > 0 ) $this->log( '{AttachmentThumbnail::generate} Resizing to fill', LOG_DEBUG );
 					
-					$scale    = max( $max_w/$src_w, $max_h/$src_h );
-					$scaled_w = $src_w * $scale;
-					$scaled_h = $src_h * $scale;
-					
-					if( $scaled_w > $max_w ) {
-						$start_x  = ( $scaled_w - $max_w ) / 2;
-						$scaled_w = $max_w;
-					}
-					if( $scaled_h > $max_h ) {
-						$start_y  = ( $scaled_h - $max_h ) / 2;
-						$scaled_h = $max_h;
-					}
-					break;
+          /* resize to max, then crop to center */
+          $max_w   = $max_w > $src_w ? $src_w : $max_w;
+          $scale_x = $max_w / $src_w;
+          
+          if( Configure::read( 'debug' ) > 0 ) $this->log( 'Scaling horizontally by ' . $scale_x, LOG_DEBUG );
+          
+          $max_h   = $max_h > $src_h ? $src_h : $max_h;
+          $scale_y = $max_h / $src_h;
+          
+          if( Configure::read( 'debug' ) > 0 ) $this->log( 'Scaling vertically by ' . $scale_y, LOG_DEBUG );
+          
+          if( $scale_x < $scale_y ) {
+            $start_x = ( $src_w - ( $max_w / $scale_y ) ) / 2;
+            $src_w   = $max_w / $scale_y;
+          }
+          else {
+            $start_y = ( $src_h - ( $max_h / $scale_x ) ) / 2;
+            $src_h   = $max_h / $scale_x;
+          }
+          $scaled_w  = $max_w;
+          $scaled_h  = $max_h;
+          break;
 			}
 		}
 			
@@ -113,6 +122,7 @@ class AttachmentThumbnail extends AppModel {
 		}
 		
 		# Create a new, empty image with a few options
+		$this->log( 'Creating an empty image ' . $scaled_w . 'x' . $scaled_h, LOG_DEBUG );
 		$thumb = imagecreatetruecolor( $scaled_w, $scaled_h );
 		imagealphablending( $thumb, false );
 		imagesavealpha( $thumb, true );
@@ -120,6 +130,8 @@ class AttachmentThumbnail extends AppModel {
 		# Resample
 		$start_x = isset( $start_x ) ? $start_x : 0;
 		$start_y = isset( $start_y ) ? $start_y : 0;
+    
+    $this->log( 'Creating a ' . $scaled_w . 'x' . $scaled_h . ' copy of a ' . $src_w . 'x' . $src_h . ' from point ' . $start_x . ':' . $start_y, LOG_DEBUG );
 		imagecopyresampled( $thumb, $copy, 0, 0, $start_x, $start_y, $scaled_w, $scaled_h, $src_w, $src_h );
 		
 		# Write to file
