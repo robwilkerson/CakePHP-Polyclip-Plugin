@@ -24,12 +24,10 @@ class AttachableBehavior extends ModelBehavior {
 			$settings = array( $settings );
 		}
 		$this->settings[$model->alias] = array_merge( $defaults, $settings );
-		
-		$this->attachables = isset( $model->actsAs['Polyclip.attachable'] )
-			? $model->actsAs['Polyclip.attachable']
-			: array( 'Attachment' );
-		
-		$this->associate( $model );
+    
+    if( empty( $this->settings[$model->alias] ) ) {
+      $this->settings[$model->alias] = array( 'Attachment' => array() );
+    }
 	}
 	
 	/**
@@ -37,22 +35,36 @@ class AttachableBehavior extends ModelBehavior {
 	 */
   
   public function beforeFind( $model, $query ) {
+    $this->associate( $model );
+    
     # TODO: Can we do something to get the right stuff in one call
     #       and avoid the work we're currently doing in afterFind?
   }
   
   public function afterFind( $model, $results, $primary ) {
+    $attachables = $this->settings[$model->alias];
+    
+    if( Configure::read( 'debug' ) > 0 ) $this->log( '{AttachableBehavior::afterFind} Found ' . count( $results ) . ' result(s)', LOG_DEBUG );
+    
     /**
      * Manually attach thumbnail information
      * TODO: Be a lot better if I could modify the containable bits
      *       on beforeFind()
      */
     foreach( $results as $i => $result ) {
-      foreach( array_intersect_assoc( $result, $this->attachables ) as $alias => $attachment ) {
+      if( Configure::read( 'debug' ) > 0 ) $this->log( '{AttachableBehavior::afterFind}  > Attachables: ' . join( ', ' , array_keys( $attachables ) ), LOG_DEBUG );
+      
+      foreach( array_intersect_assoc( $result, $attachables ) as $alias => $attachment ) {
+        if( Configure::read( 'debug' ) > 0 ) $this->log( '{AttachableBehavior::afterFind}  > Results and attachables both include a(n) ' . $alias, LOG_DEBUG );
+        
         if( !empty( $result[$alias]['id'] ) ) {
+          if( Configure::read( 'debug' ) > 0 ) $this->log( '{AttachableBehavior::afterFind}  > A(n) ' . $alias . ' exists for this result', LOG_DEBUG );
+          
           $url_info   = pathinfo( $attachment['url'] );
           $path_info  = pathinfo( $attachment['path'] );
-          $thumbnails = $model->$alias->AttachmentThumbnail->find( 'all' );
+          $thumbnails = $model->$alias->AttachmentThumbnail->find( 'all', array( 'conditions' => array( 'AttachmentThumbnail.polyclip_attachment_id' => $result[$alias]['id'] ) ) );
+          
+          if( Configure::read( 'debug' ) > 0 ) $this->log( '{AttachableBehavior::afterFind}  > Found ' . count( $thumbnails ) . ' thumbnail(s)', LOG_DEBUG );
           
           if( !empty( $thumbnails ) ) {
             if( !isset( $results[$i]['Thumbnail'] ) ) {
@@ -61,6 +73,9 @@ class AttachableBehavior extends ModelBehavior {
             
             foreach( $thumbnails as $thumb ) {
               $thumb_alias = $thumb['AttachmentThumbnail']['alias'];
+              
+              if( Configure::read( 'debug' ) > 0 ) $this->log( '{AttachableBehavior::afterFind}  > Processing the ' . $thumb_alias . ' thumbnail', LOG_DEBUG );
+              
               $results[$i]['Thumbnail'][$alias][$thumb_alias] = array();
               $results[$i]['Thumbnail'][$alias][$thumb_alias]['size']   = $thumb['AttachmentThumbnail']['size'];
               $results[$i]['Thumbnail'][$alias][$thumb_alias]['width']  = $thumb['ImageAttachment']['width'];
@@ -89,7 +104,8 @@ class AttachableBehavior extends ModelBehavior {
   }
   
   public function beforeSave( $model ) {
-    $creating = empty( $model->id );
+    $creating    = empty( $model->id );
+    $attachables = $this->settings[$model->alias];
     
     /**
      * Save off current attachment data if
@@ -98,7 +114,7 @@ class AttachableBehavior extends ModelBehavior {
      *   - an attachment already exists
      */
     if( !$creating ) { # editing an existing record
-      foreach( $this->attachables as $alias => $attachment ) {
+      foreach( $attachables as $alias => $attachment ) {
         if( isset( $model->data[$alias] ) ) { # An attachment is being uploaded
           $this->associate( $model ); # Ensure that the models are associated
           
@@ -113,11 +129,12 @@ class AttachableBehavior extends ModelBehavior {
   }
 	
 	public function afterSave( $model, $created ) {
-    $entity_id = $created
+    $attachables = $this->settings[$model->alias];
+    $entity_id   = $created
 			? $model->getLastInsertId()
 			: $model->id;
 			
-		foreach( $this->attachables as $alias => $attachable ) {
+		foreach( $attachables as $alias => $attachable ) {
 			if( isset( $model->data[$alias] ) ) {
 				try {
           $model->{$alias}->attach( $model->alias, $entity_id, $alias, $model->data[$alias]['upload'], $this->overwrite );
@@ -139,9 +156,10 @@ class AttachableBehavior extends ModelBehavior {
    * @access  private
    */
   private function associate( $model ) {
+    $attachables  = $this->settings[$model->alias];
     $associations = $model->getAssociated();
     
-    foreach( $this->attachables as $alias => $attachable ) {
+    foreach( $attachables as $alias => $attachable ) {
       if( !isset( $associations[$alias] ) ) {
         $model->bindModel(
           array( 'hasOne' => array( $alias => array( 'className' => 'Polyclip.Attachment', 'foreignKey' => 'entity_id', 'conditions' => array( $alias . '.model' => $model->alias ) ) ) )
