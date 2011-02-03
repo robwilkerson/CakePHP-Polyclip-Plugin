@@ -135,7 +135,8 @@ class AttachableBehavior extends ModelBehavior {
 			: $model->id;
 			
 		foreach( $attachables as $alias => $attachable ) {
-			if( isset( $model->data[$alias] ) ) {
+      
+			if( isset( $model->data[$alias] ) && $model->data[$alias]['upload']['error'] != UPLOAD_ERR_NO_FILE ) {
 				try {
           $model->{$alias}->attach( $model->alias, $entity_id, $alias, $model->data[$alias]['upload'], $this->overwrite );
 				}
