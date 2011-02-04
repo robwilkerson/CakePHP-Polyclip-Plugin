@@ -80,12 +80,8 @@ class AttachmentThumbnail extends AppModel {
           $max_w   = $max_w > $src_w ? $src_w : $max_w;
           $scale_x = $max_w / $src_w;
           
-          if( Configure::read( 'debug' ) > 0 ) $this->log( 'Scaling horizontally by ' . $scale_x, LOG_DEBUG );
-          
           $max_h   = $max_h > $src_h ? $src_h : $max_h;
           $scale_y = $max_h / $src_h;
-          
-          if( Configure::read( 'debug' ) > 0 ) $this->log( 'Scaling vertically by ' . $scale_y, LOG_DEBUG );
           
           if( $scale_x < $scale_y ) {
             $start_x = ( $src_w - ( $max_w / $scale_y ) ) / 2;
@@ -122,7 +118,6 @@ class AttachmentThumbnail extends AppModel {
 		}
 		
 		# Create a new, empty image with a few options
-		$this->log( 'Creating an empty image ' . $scaled_w . 'x' . $scaled_h, LOG_DEBUG );
 		$thumb = imagecreatetruecolor( $scaled_w, $scaled_h );
 		imagealphablending( $thumb, false );
 		imagesavealpha( $thumb, true );
@@ -131,8 +126,7 @@ class AttachmentThumbnail extends AppModel {
 		$start_x = isset( $start_x ) ? $start_x : 0;
 		$start_y = isset( $start_y ) ? $start_y : 0;
     
-    $this->log( 'Creating a ' . $scaled_w . 'x' . $scaled_h . ' copy of a ' . $src_w . 'x' . $src_h . ' from point ' . $start_x . ':' . $start_y, LOG_DEBUG );
-		imagecopyresampled( $thumb, $copy, 0, 0, $start_x, $start_y, $scaled_w, $scaled_h, $src_w, $src_h );
+    imagecopyresampled( $thumb, $copy, 0, 0, $start_x, $start_y, $scaled_w, $scaled_h, $src_w, $src_h );
 		
 		# Write to file
 		switch( strtolower( $info['extension'] ) ) {

@@ -44,27 +44,17 @@ class AttachableBehavior extends ModelBehavior {
   public function afterFind( $model, $results, $primary ) {
     $attachables = $this->settings[$model->alias];
     
-    if( Configure::read( 'debug' ) > 0 ) $this->log( '{AttachableBehavior::afterFind} Found ' . count( $results ) . ' result(s)', LOG_DEBUG );
-    
     /**
      * Manually attach thumbnail information
      * TODO: Be a lot better if I could modify the containable bits
      *       on beforeFind()
      */
     foreach( $results as $i => $result ) {
-      if( Configure::read( 'debug' ) > 0 ) $this->log( '{AttachableBehavior::afterFind}  > Attachables: ' . join( ', ' , array_keys( $attachables ) ), LOG_DEBUG );
-      
       foreach( array_intersect_assoc( $result, $attachables ) as $alias => $attachment ) {
-        if( Configure::read( 'debug' ) > 0 ) $this->log( '{AttachableBehavior::afterFind}  > Results and attachables both include a(n) ' . $alias, LOG_DEBUG );
-        
         if( !empty( $result[$alias]['id'] ) ) {
-          if( Configure::read( 'debug' ) > 0 ) $this->log( '{AttachableBehavior::afterFind}  > A(n) ' . $alias . ' exists for this result', LOG_DEBUG );
-          
           $url_info   = pathinfo( $attachment['url'] );
           $path_info  = pathinfo( $attachment['path'] );
           $thumbnails = $model->$alias->AttachmentThumbnail->find( 'all', array( 'conditions' => array( 'AttachmentThumbnail.polyclip_attachment_id' => $result[$alias]['id'] ) ) );
-          
-          if( Configure::read( 'debug' ) > 0 ) $this->log( '{AttachableBehavior::afterFind}  > Found ' . count( $thumbnails ) . ' thumbnail(s)', LOG_DEBUG );
           
           if( !empty( $thumbnails ) ) {
             if( !isset( $results[$i]['Thumbnail'] ) ) {
@@ -73,8 +63,6 @@ class AttachableBehavior extends ModelBehavior {
             
             foreach( $thumbnails as $thumb ) {
               $thumb_alias = $thumb['AttachmentThumbnail']['alias'];
-              
-              if( Configure::read( 'debug' ) > 0 ) $this->log( '{AttachableBehavior::afterFind}  > Processing the ' . $thumb_alias . ' thumbnail', LOG_DEBUG );
               
               $results[$i]['Thumbnail'][$alias][$thumb_alias] = array();
               $results[$i]['Thumbnail'][$alias][$thumb_alias]['size']   = $thumb['AttachmentThumbnail']['size'];
@@ -120,7 +108,7 @@ class AttachableBehavior extends ModelBehavior {
           
           $existing = $model->find( 'first', array( 'conditions' => array( $model->alias . '.id' => $model->id ) ) );
           
-          if( !empty( $existing['Image'] ) ) { # An attachment already exists
+          if( !empty( $existing[$alias] ) ) { # An attachment already exists
             $this->overwrite = $existing;
           }
         }
