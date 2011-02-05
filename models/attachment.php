@@ -138,6 +138,11 @@ class Attachment extends AppModel {
 		}
 
 		try {
+      # Attempt to create the directory if it doesn't exist
+      if( !file_exists( dirname( $save_as ) ) ) {
+        mkdir( dirname( $save_as ), 0777, true );
+      }
+      
 			if( move_uploaded_file( $attachment['tmp_name'], $save_as ) ) {
 				$attachment['mimetype'] = $attachment['type'];
 				$attachment['path']     = str_replace( APP, '/', $save_as );
