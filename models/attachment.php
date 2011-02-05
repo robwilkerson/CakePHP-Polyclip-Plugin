@@ -74,6 +74,27 @@ class Attachment extends AppModel {
 			throw new Exception( $this->upload_error( $new['error'] ) );
 		}
 	}
+  
+  /**
+   * Deletes an attachment. This includes the physical file. Note that it
+   * expects the completely hydrated model data.
+   *
+   * @param   $data       array
+   * @param   $thumbnails array
+   * @return  boolean
+   * @access  public
+   */
+  public function delete( $data, $thumbnails ) {
+    # Delete the associated thumbnails
+    foreach( $thumbnails as $thumb ) {
+      $this->unlink( APP . $thumb['path'] );
+      $this->AttachmentThumbnail->delete( $thumb['id'] );
+    }
+    
+    # Delete the physical file and the attachment record
+    $this->unlink( APP . $data['path'] );
+    return parent::delete( $data['id'] );
+  }
 	
 	public function has_thumbnails() {
 		# TODO: How do we determine whether thumbnails exist?

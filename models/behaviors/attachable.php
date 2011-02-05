@@ -94,6 +94,7 @@ class AttachableBehavior extends ModelBehavior {
               $thumb_alias = $thumb['AttachmentThumbnail']['alias'];
               
               $results[$i]['Thumbnail'][$alias][$thumb_alias] = array();
+              $results[$i]['Thumbnail'][$alias][$thumb_alias]['id']     = $thumb['AttachmentThumbnail']['id'];
               $results[$i]['Thumbnail'][$alias][$thumb_alias]['size']   = $thumb['AttachmentThumbnail']['size'];
               $results[$i]['Thumbnail'][$alias][$thumb_alias]['width']  = $thumb['ImageAttachment']['width'];
               $results[$i]['Thumbnail'][$alias][$thumb_alias]['height'] = $thumb['ImageAttachment']['height'];
@@ -190,8 +191,33 @@ class AttachableBehavior extends ModelBehavior {
 	}
   
   /**
+   * beforeDelete callback.
+   *
+   * - Deletes any attachments before the parent model record is deleted.
+   *
+   * @param   $model
+   * @return  boolean
+   * @access  public
+   */
+  public function beforeDelete( $model ) {
+    $this->associate( $model );
+    $attachables = $this->settings[$model->alias];
+    $model->data = $model->find( 'first', array( 'conditions' => array( $model->alias . '.id' => $model->id ) ) );
+    
+    # Delete any attachments
+    foreach( $attachables as $alias => $attachment ) {
+      if( !empty( $model->data[$alias] ) ) {
+        $model->$alias->delete( $model->data[$alias], $model->data['Thumbnail'][$alias] );
+      }
+    }
+    
+    return true;
+  }
+  
+  /**
    * Bind the current model to the Attachment model for each attachable.
    *
+   * @param   $model
    * @return  void
    * @access  private
    */
@@ -201,13 +227,16 @@ class AttachableBehavior extends ModelBehavior {
     
     foreach( $attachables as $alias => $attachable ) {
       if( !isset( $associations[$alias] ) ) {
-        $model->bindModel(
-          array( 'hasOne' => array(
+        $model->bindModel( array(
+          'hasOne' => array(
             $alias => array(
               'className' => 'Polyclip.Attachment',
               'foreignKey' => 'entity_id',
-              'conditions' => array( $alias . '.model' => $model->alias, $alias . '.alias' => $alias ) ) ) )
-        );
+              'conditions' => array( $alias . '.model' => $model->alias, $alias . '.alias' => $alias ),
+              'dependent'  => true
+            )
+          )
+        ), false );
       }
     }
   }
