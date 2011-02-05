@@ -10,9 +10,9 @@ class AttachmentComponent extends Object {
 		# rendered by the element.
 		#
 		$attachments = isset( $controller->{$controller->modelClass}->actsAs['Polyclip.attachable'] )
-			? array_keys( $controller->{$controller->modelClass}->actsAs['Polyclip.attachable'] )
-			: array( 'File' );
-		
+			? $controller->{$controller->modelClass}->actsAs['Polyclip.attachable']
+			: array( 'Attachment' => null );
+      
 		$controller->set( compact( 'attachments' ) );
 	}
 }

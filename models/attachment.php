@@ -34,7 +34,8 @@ class Attachment extends AppModel {
 	 * 																AttachableBehavior is attached
 	 * @param		$new				array			The newly uploaded attachment
 	 * @param		$old				array			The attachment to be replaced
-	 * @return 	uuid				The new file's identifier
+	 * @return 	void
+	 * @access  public
 	 */
 	public function attach( $model, $entity_id, $alias, $new, $old = null ) {
 		if( Configure::read( 'debug' ) > 0 ) $this->log( '{Attachment::attach} --> Attaching a file to a(n) ' . $model . ' with id ' . $entity_id, LOG_DEBUG );

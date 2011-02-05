@@ -33,6 +33,18 @@ class AttachmentThumbnail extends AppModel {
 	 * PUBLIC METHODS
 	 */
 	
+  /**
+   * Generates a thumbnail from the specifications.
+   *
+   * @param   $method
+   * @param   $attachment
+   * @param   $thumb_alias
+   * @param   $max_w
+   * @param   $max_h
+   * @param   $quality
+   * @return  void
+   * @access  public
+   */
 	public function generate( $method, $attachment, $thumb_alias, $max_w, $max_h, $quality = 75 ) {
 		if( Configure::read( 'debug' ) > 0 ) $this->log( '{AttachmentThumbnail::generate} Creating a ' . $thumb_alias . ' thumbnail not to exceed ' . $max_w . 'x' . $max_h . ' for ' . json_encode( $attachment ), LOG_DEBUG );
 		

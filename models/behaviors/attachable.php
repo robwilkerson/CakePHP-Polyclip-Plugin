@@ -8,6 +8,7 @@ class AttachableBehavior extends ModelBehavior {
 	
 	/**
 	 * TODO: Add option for required attachments
+	 * TODO: Support configurable base path
 	 */
 
 	/**
@@ -15,6 +16,8 @@ class AttachableBehavior extends ModelBehavior {
    *
 	 * @param 	object 	$model 		  Model using the behavior
 	 * @param 	array 	$settings 	Settings overrides.
+	 * @return  void
+	 * @access  public
 	 */
 	public function setup( $model, $settings = array() ) {
 		# Defaults
@@ -34,13 +37,39 @@ class AttachableBehavior extends ModelBehavior {
 	 * CALLBACK METHODS
 	 */
   
+  /**
+   * beforeFind callback
+   *
+   * - Sets the model association so that attachments are returned
+   *
+   * @todo    Ensure this respects the recursive/containable values
+   * @param   $model
+   * @param   $query
+   * @return  boolean
+   * @access  public
+   */
   public function beforeFind( $model, $query ) {
     $this->associate( $model );
     
     # TODO: Can we do something to get the right stuff in one call
     #       and avoid the work we're currently doing in afterFind?
+    
+    return true;
   }
   
+  /**
+   * afterFind callback
+   *
+   * - Ugh. Repackage the thumbnail data into something intuitive that's
+   *   easier to deal with on the front end. TODO: Is there a better way
+   *   to do this work?
+   *
+   * @param   $model
+   * @param   $results
+   * @param   $primary
+   * @return  array
+   * @access  public
+   */
   public function afterFind( $model, $results, $primary ) {
     $attachables = $this->settings[$model->alias];
     
@@ -91,6 +120,17 @@ class AttachableBehavior extends ModelBehavior {
     return $results;
   }
   
+  /**
+   * beforeSave callback
+   *
+   * - Copies off the existing model data so we can determine, in afterSave,
+   *   whether we're uploading a new attachment or replacing an existing
+   *   attachment.
+   *
+   * @param   $model
+   * @return  boolean
+   * @access  public
+   */
   public function beforeSave( $model ) {
     $creating    = empty( $model->id );
     $attachables = $this->settings[$model->alias];
@@ -114,8 +154,20 @@ class AttachableBehavior extends ModelBehavior {
         }
       }
     }
+    
+    return true;
   }
 	
+  /**
+   * afterSave callback
+   *
+   * - Creates or replaces an attachment for the saved model, if appropriate.
+   *
+   * @param   $model
+   * @param   $created
+   * @return  boolean
+   * @access  public
+   */
 	public function afterSave( $model, $created ) {
     $attachables = $this->settings[$model->alias];
     $entity_id   = $created
@@ -123,7 +175,6 @@ class AttachableBehavior extends ModelBehavior {
 			: $model->id;
 			
 		foreach( $attachables as $alias => $attachable ) {
-      
 			if( isset( $model->data[$alias] ) && $model->data[$alias]['upload']['error'] != UPLOAD_ERR_NO_FILE ) {
 				try {
           $model->{$alias}->attach( $model->alias, $entity_id, $alias, $model->data[$alias]['upload'], $this->overwrite );
