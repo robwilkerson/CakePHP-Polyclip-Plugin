@@ -151,7 +151,11 @@ class AttachableBehavior extends ModelBehavior {
     foreach( $attachables as $alias => $attachable ) {
       if( !isset( $associations[$alias] ) ) {
         $model->bindModel(
-          array( 'hasOne' => array( $alias => array( 'className' => 'Polyclip.Attachment', 'foreignKey' => 'entity_id', 'conditions' => array( $alias . '.model' => $model->alias ) ) ) )
+          array( 'hasOne' => array(
+            $alias => array(
+              'className' => 'Polyclip.Attachment',
+              'foreignKey' => 'entity_id',
+              'conditions' => array( $alias . '.model' => $model->alias, $alias . '.alias' => $alias ) ) ) )
         );
       }
     }
