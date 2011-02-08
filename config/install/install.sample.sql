@@ -1,4 +1,4 @@
-USE YOUR_DATABASE;
+USE @DB_NAME@;
 
 -- The shared physical file properties of a model attachment
 -- Because this is a plugin, the path and URL are different values
