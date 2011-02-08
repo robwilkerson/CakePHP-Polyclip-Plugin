@@ -10,9 +10,13 @@
 
 	@author	Rob Wilkerson
 	@date	  8/23/2007
-  @todo   Need to do something with the polyclip/webroot/assets directory.
-          It's being stored off by the parent build, but can't be retrieved
-          by this one because of settings.
+  
+  NOTE:
+  
+  THIS BUILD DEPENDS ON THE PARENT BUILD SAVING OFF A COPY OF THE
+  polyclip/webroot/assets DIRECTORY. IT WILL BE COPIED BACK AFTER
+  THE BUILD TO PRESERVE CLIENT ASSETS.
+  
  -->
 
 <project name="build-polyclip" default="all" basedir=".">
@@ -172,39 +176,12 @@
 			   verbose="false"
 		>
       <fileset dir="${local.buildroot}/${project.fsname}/"
-               excludes="build.*, .gitignore"
+               excludes="build.*, .gitignore, README*"
       />
-			<fileset dir="${local.buildroot}/${project.fsname}" />
+			<!-- <fileset dir="${local.buildroot}/${project.fsname}" /> -->
 		</scp>
 		<echo>	> Complete</echo>
 		
-    <!-- 
-    <try>
-      <echo> </echo>
-      <echo>Copy the assets/ directory from the backup tarball back into the plugin webroot.</echo>
-      <echo>Executing "tar zxf ${remote.archiveto}/${project.fsname}.${project.fstimestamp}.tar.gz -C ${remote.projectroot} ./webroot/assets"</echo>
-      <sshexec host="${remote.hostname}"
-               trust="true"
-               username="${remote.user}"
-               password="${remote.password}"
-               command="tar zxf ${remote.archiveto}/${project.fsname}.${project.fstimestamp}.tar.gz -C ${remote.projectroot} ./webroot/assets"
-               outputproperty="assetcopy"
-      />
-      <echo>	> Complete</echo>
-      
-      <catch>
-        <echo>An error occurred while attempting to copy the assets directory:</echo>
-        <echo>${assetcopy}</echo>
-				<echo>	> If this is not the first build of this project or if the error is unexpected for any other</echo>
-				<echo>	  reason then terminate this script and investigate.</echo>
-				<echo>The build will continue in ~30 seconds.</echo>
-
-				<sleep seconds="30" />
-				<echo>Continuing...</echo>
-      </catch>
-    </try>
-     -->
-     
 		<echo> </echo>
 		<echo>Install or update the project database on ${mysql.host}.</echo>
 		<echo>Executing "mysql -h${mysql.host} -u${mysql.user} -p${mysql.password} &lt; ${remote.projectroot}/config/install/${build.executionpath}.sql"</echo>
@@ -213,6 +190,17 @@
 			       username="${remote.user}"
 			       password="${remote.password}"
 		         command="mysql -h${mysql.host} -u${mysql.user} -p${mysql.password} &lt; ${remote.projectroot}/config/install/${build.executionpath}.sql"
+		/>
+		<echo>	> Complete</echo>
+		
+		<echo> </echo>
+		<echo>Copy assets back into the plugin webroot.</echo>
+		<echo>Executing "mv ~/tmp/assets ${remote.projectroot}/webroot"</echo>
+		<sshexec host="${remote.hostname}"
+			       trust="true"
+			       username="${remote.user}"
+			       password="${remote.password}"
+		         command="mv ~/tmp/assets ${remote.projectroot}/webroot"
 		/>
 		<echo>	> Complete</echo>
 	</target>
