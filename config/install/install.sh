@@ -1,8 +1,8 @@
 #!/bin/bash
 
 if [ $# -eq 0 ]; then
-     echo "Usage: ./mkassets.sh <instance root>"
-     exit 1
+  echo "Usage: ./install.sh <instance root>"
+  exit 1
 fi
 
 basedir=$1
@@ -18,11 +18,12 @@ cd assets
 
 for i in $letters
 do
-     for j in $letters
-     do
-          mkdir -p $i/$j
-     done
+  for j in $letters
+  do
+    mkdir -p $i/$j
+  done
 done
+
 chmod -R 777 .
 
 exit 0

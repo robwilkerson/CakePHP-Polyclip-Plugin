@@ -178,8 +178,8 @@ class Attachment extends AppModel {
           $data['ImageAttachment']['height'] = $info[1];
           
           # Generate thumbnails, if necessary
-          if( isset( $this->{$attachment['model']}->actsAs['Polyclip.attachable'][$attachment['alias']]['Thumbnails'] ) ) {
-            $thumbnails = $this->{$attachment['model']}->actsAs['Polyclip.attachable'][$attachment['alias']]['Thumbnails'];
+          if( isset( $this->{$attachment['model']}->actsAs['Polyclip.Attachable'][$attachment['alias']]['Thumbnails'] ) ) {
+            $thumbnails = $this->{$attachment['model']}->actsAs['Polyclip.Attachable'][$attachment['alias']]['Thumbnails'];
             $data['AttachmentThumbnail'] = array();
             
             foreach( $thumbnails as $thumbnail_alias => $details ) {
