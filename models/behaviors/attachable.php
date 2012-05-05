@@ -51,8 +51,9 @@ class AttachableBehavior extends ModelBehavior {
   public function beforeFind( $model, $query ) {
     $this->associate( $model );
     
-    # TODO: Can we do something to get the right stuff in one call
-    #       and avoid the work we're currently doing in afterFind?
+    if( !isset( $query['joins'] ) ) {
+      $query['joins'] = array();
+    }
     
     return true;
   }
@@ -207,7 +208,7 @@ class AttachableBehavior extends ModelBehavior {
     # Delete any attachments
     foreach( $attachables as $alias => $attachment ) {
       if( !empty( $model->data[$alias] ) ) {
-        $model->$alias->delete( $model->data[$alias], $model->data['Thumbnail'][$alias] );
+        $model->$alias->delete( $model->data, $alias );
       }
     }
     

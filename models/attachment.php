@@ -220,11 +220,11 @@ class Attachment extends AppModel {
    */
   private function unlink( $path = null ) {
     if( file_exists( $path ) ) {
-      if( Configure::read( 'debug' ) > 0 ) $this->log( '{Attachment::unlink} --> Destroying ' . $path, LOG_DEBUG );
+      if( Configure::read( 'debug' ) > 0 ) $this->log( 'Attachment::unlink() -> Destroying attachment at' . $path, LOG_DEBUG );
       unlink( $path );
     }
     else {
-      $this->log( $path . ' does not exist.', LOG_DEBUG );
+      $this->log( 'Attachment::unlink() -> ' . $path . ' does not exist. No attachement was deleted.', LOG_DEBUG );
     }
   }
   
