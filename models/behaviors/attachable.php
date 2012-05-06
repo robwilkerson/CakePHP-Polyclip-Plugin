@@ -5,37 +5,41 @@
  */
 class AttachableBehavior extends ModelBehavior {
   private $overwrite = null;
-	
-	/**
-	 * TODO: Add option for required attachments
-	 * TODO: Support configurable base path
-	 */
+  
+  /**
+   * TODO: Add option for required attachments
+   * TODO: Support configurable base path
+   */
 
-	/**
-	 * Initiate behavior for the model using specified settings.
+  /**
+   * Initiate behavior for the model using specified settings.
    *
-	 * @param 	object 	$model 		  Model using the behavior
-	 * @param 	array 	$settings 	Settings overrides.
-	 * @return  void
-	 * @access  public
-	 */
-	public function setup( $model, $settings = array() ) {
-		# Defaults
-		$defaults = array();
-		
-		if( isset( $settings ) && !is_array( $settings ) ) {
-			$settings = array( $settings );
-		}
-		$this->settings[$model->alias] = array_merge( $defaults, $settings );
+   * @param   object  $model      Model using the behavior
+   * @param   array   $settings   Settings overrides.
+   * @return  void
+   * @access  public
+   */
+  public function setup( $model, $settings = array() ) {
+    # Defaults
+    $defaults = array();
+    
+    if( isset( $settings ) && !is_array( $settings ) ) {
+      $settings = array( $settings );
+    }
+    $this->settings[$model->alias] = array_merge( $defaults, $settings );
     
     if( empty( $this->settings[$model->alias] ) ) {
       $this->settings[$model->alias] = array( 'Attachment' => array() );
     }
-	}
-	
-	/**
-	 * CALLBACK METHODS
-	 */
+
+    # Ensure that the model is associated with its attachments so they can be
+    # joined in queries via contain/joins keys.
+    $this->associate( $model );
+  }
+  
+  /**
+   * CALLBACK METHODS
+   */
   
   /**
    * beforeFind callback
@@ -49,11 +53,8 @@ class AttachableBehavior extends ModelBehavior {
    * @access  public
    */
   public function beforeFind( $model, $query ) {
-    $this->associate( $model );
-    
-    if( !isset( $query['joins'] ) ) {
-      $query['joins'] = array();
-    }
+    # TODO: Can we do something to get the right stuff in one call
+    #       and avoid the work we're currently doing in afterFind?
     
     return true;
   }
@@ -73,15 +74,19 @@ class AttachableBehavior extends ModelBehavior {
    */
   public function afterFind( $model, $results, $primary ) {
     $attachables = $this->settings[$model->alias];
-    
+
     /**
      * Manually attach thumbnail information
      * TODO: Be a lot better if I could modify the containable bits
      *       on beforeFind()
      */
     foreach( $results as $i => $result ) {
+      # If attachment data exists in the results, add merge image and thumbnail data, as req'd
       foreach( array_intersect_assoc( $result, $attachables ) as $alias => $attachment ) {
         if( !empty( $result[$alias]['id'] ) ) {
+          $image_attachment = $model->$alias->ImageAttachment->find( 'first', array( 'contain' => false, 'conditions' => array( 'ImageAttachment.entity_id' => $result[$alias]['id'] ) ) );
+          $result[$alias]['ImageAttachment'] = $image_attachment['ImageAttachment'];
+
           $url_info   = pathinfo( $attachment['url'] );
           $path_info  = pathinfo( $attachment['path'] );
           $thumbnails = $model->$alias->AttachmentThumbnail->find( 'all', array( 'conditions' => array( 'AttachmentThumbnail.polyclip_attachment_id' => $result[$alias]['id'] ) ) );
@@ -146,8 +151,6 @@ class AttachableBehavior extends ModelBehavior {
     if( !$creating ) { # editing an existing record
       foreach( $attachables as $alias => $attachment ) {
         if( isset( $model->data[$alias] ) ) { # An attachment is being uploaded
-          $this->associate( $model ); # Ensure that the models are associated
-          
           $existing = $model->find( 'first', array( 'conditions' => array( $model->alias . '.id' => $model->id ) ) );
           
           if( !empty( $existing[$alias] ) ) { # An attachment already exists
@@ -159,7 +162,7 @@ class AttachableBehavior extends ModelBehavior {
     
     return true;
   }
-	
+  
   /**
    * afterSave callback
    *
@@ -170,26 +173,26 @@ class AttachableBehavior extends ModelBehavior {
    * @return  boolean
    * @access  public
    */
-	public function afterSave( $model, $created ) {
+  public function afterSave( $model, $created ) {
     $attachables = $this->settings[$model->alias];
     $entity_id   = $created
-			? $model->getLastInsertId()
-			: $model->id;
-			
-		foreach( $attachables as $alias => $attachable ) {
-			if( isset( $model->data[$alias] ) && $model->data[$alias]['upload']['error'] != UPLOAD_ERR_NO_FILE ) {
-				try {
+      ? $model->getLastInsertId()
+      : $model->id;
+      
+    foreach( $attachables as $alias => $attachable ) {
+      if( isset( $model->data[$alias] ) && $model->data[$alias]['upload']['error'] != UPLOAD_ERR_NO_FILE ) {
+        try {
           $model->{$alias}->attach( $model->alias, $entity_id, $alias, $model->data[$alias]['upload'], $this->overwrite );
-				}
-				catch( Exception $e ) {
-					# TODO: Do something more graceful than exit()?
-					exit( '{' . $alias . '::attach}' . $e->getMessage() );
-				}
-			}
-		}
-		
-		return true;
-	}
+        }
+        catch( Exception $e ) {
+          # TODO: Do something more graceful than exit()?
+          exit( '{' . $alias . '::attach}' . $e->getMessage() );
+        }
+      }
+    }
+    
+    return true;
+  }
   
   /**
    * beforeDelete callback.
@@ -201,7 +204,6 @@ class AttachableBehavior extends ModelBehavior {
    * @access  public
    */
   public function beforeDelete( $model ) {
-    $this->associate( $model );
     $attachables = $this->settings[$model->alias];
     $model->data = $model->find( 'first', array( 'conditions' => array( $model->alias . '.id' => $model->id ) ) );
     
